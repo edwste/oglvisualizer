@@ -32,7 +32,6 @@ struct Character {
 };
 
 std::map<GLchar, Character> Characters;
-unsigned int VAO2, VBO2;
 unsigned int VAO, VBO;
 
 #include <glm/ext.hpp> // perspective, translate, rotate
@@ -118,44 +117,13 @@ int main()
     // compile and setup the shader
     // ----------------------------
     Shader shader("text.vs", "text.fs");
-	shader.use();
-    //Shader shader2("normal.vs","normal.fs");
-    glm::mat4 projection = glm::perspective(glm::radians(45.0f), static_cast<float>(SCR_WIDTH)/static_cast<float>(SCR_HEIGHT), 0.1f,100.0f);
-    //glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(SCR_WIDTH), 0.0f, static_cast<float>(SCR_HEIGHT));
-	glm::mat4 view = glm::mat4(1.0f);
-	glm::mat4 model = glm::mat4(1.0f);
-
-    //shader2.use();
-    float vertices[] = {
-        -0.5f, -0.5f, 0.0f, // left  
-         0.5f, -0.5f, 0.0f, // right 
-         0.0f,  0.5f, 0.0f  // top   
-    }; 
-
-    glGenVertexArrays(1, &VAO2);
-    glGenBuffers(1, &VBO2);
-    // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
-    glBindVertexArray(VAO2);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO2);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    // note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
-    glBindBuffer(GL_ARRAY_BUFFER, 0); 
-
-    // You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
-    // VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
-    glBindVertexArray(0); 
+    glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(SCR_WIDTH), 0.0f, static_cast<float>(SCR_HEIGHT));
 //glm::mat4 camera(float Translate, glm::vec2 const& Rotate, glm::mat4& Projection)
-//    projection = camera(1.0f, glm::vec2(1.0f,0.0f), projection);
+    projection = camera(1.0f, glm::vec2(0,0), projection);
 //    glm::mat4 persp = glm::perspective(glm::radians(45.f), 1.33f, 5.5f, 10.f);
  //   glm::mat4 projection = projectionin * persp;
+    shader.use();
     glUniformMatrix4fv(glGetUniformLocation(shader.ID, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
-//    glUniformMatrix4fv(glGetUniformLocation(shader2.ID, "view"), 1, GL_FALSE, glm::value_ptr(view));
-//    glUniformMatrix4fv(glGetUniformLocation(shader2.ID, "model"), 1, GL_FALSE, glm::value_ptr(model));
 
     // FreeType
     // --------
@@ -258,24 +226,7 @@ int main()
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-//		shader2.use();
- //   	glBindVertexArray(VAO2);
-  //  	glBindBuffer(GL_ARRAY_BUFFER, VBO2);
-   //     glDrawArrays(GL_TRIANGLES, 0, 3);
-    //	glBindVertexArray(0);
-	//
-	/*
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
-	*/
-	for (int i=0.0f; i<50.0f;i++){
-		for (int j=0.0f; j<50.0f;j++){
-        		RenderText(shader, "This is sample text", , 25.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
-		}
-	}	
+        RenderText(shader, "This is sample text", 25.0f, 25.0f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
         RenderText(shader, "(C) LearnOpenGL.com", 540.0f, 570.0f, 0.5f, glm::vec3(0.3, 0.7f, 0.9f));
        
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
@@ -343,7 +294,7 @@ void RenderText(Shader &shader, std::string text, float x, float y, float scale,
         glBindBuffer(GL_ARRAY_BUFFER, VBO);
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices); // be sure to use glBufferSubData and not glBufferData
 
-        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
         // render quad
         glDrawArrays(GL_TRIANGLES, 0, 6);
         // now advance cursors for next glyph (note that advance is number of 1/64 pixels)
