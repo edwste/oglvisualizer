@@ -17,7 +17,7 @@
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
-void RenderText(Shader &shader, std::string text, float x, float y, float z, float scale, glm::vec3 color);
+int getTextTexture(Shader &shader, std::string text, float scale, glm::vec3 color);
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -118,31 +118,15 @@ int main()
     // compile and setup the shader
     // ----------------------------
     Shader shader("text.vs", "text.fs");
-	shader.use();
-    //Shader shader2("normal.vs","normal.fs");
-    //glm::mat4 projection = glm::perspective(glm::radians(45.0f), static_cast<float>(SCR_WIDTH)/static_cast<float>(SCR_HEIGHT), 0.1f,100.0f);
+    shader.use();
+    Shader shader2("normal.vs","normal.fs");
+    shader2.use();
+    glm::mat4 projection = glm::perspective(glm::radians(45.0f), static_cast<float>(SCR_WIDTH)/static_cast<float>(SCR_HEIGHT), 0.1f,100.0f);
     //glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(SCR_WIDTH), 0.0f, static_cast<float>(SCR_HEIGHT));
-    glm::mat4 projection = glm::mat4(1.0f);
-	glm::mat4 view = glm::mat4(1.0f);
-	glm::mat4 model = glm::mat4(1.0f);
-
+    //glm::mat4 projection = glm::mat4(1.0f);
+    //glm::mat4 view = glm::mat4(1.0f);
+    //glm::mat4 model = glm::mat4(1.0f);
     //shader2.use();
-    float vertices[] = {
-        -0.5f, -0.5f, 0.0f, // left  
-         0.5f, -0.5f, 0.0f, // right 
-         0.0f,  0.5f, 0.0f  // top   
-    }; 
-
-    glGenVertexArrays(1, &VAO2);
-    glGenBuffers(1, &VBO2);
-    // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
-    glBindVertexArray(VAO2);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO2);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
 
     // note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
     glBindBuffer(GL_ARRAY_BUFFER, 0); 
@@ -159,7 +143,7 @@ int main()
 //    glUniformMatrix4fv(glGetUniformLocation(shader2.ID, "model"), 1, GL_FALSE, glm::value_ptr(model));
 
     // FreeType
-    // --------
+    // ----------------------------------------------------------
     FT_Library ft;
     // All functions return a value different than 0 whenever an error occurred
     if (FT_Init_FreeType(&ft))
@@ -232,7 +216,6 @@ int main()
     // destroy FreeType once we're finished
     FT_Done_Face(face);
     FT_Done_FreeType(ft);
-
     
     // configure VAO/VBO for texture quads
     // -----------------------------------
@@ -247,9 +230,18 @@ int main()
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
-	
-	// attach it to currently bound framebuffer object
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorbuffer, 0);
+    int textTextureMap = getTextTexture(shader, "This is sample text", 1.0f, glm::vec3(0.0, 0.0f, 0.0f));
+    /*int w,h;
+    int miplevel = 0;
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, miplevel, GL_TEXTURE_WIDTH, &w);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, miplevel, GL_TEXTURE_HEIGHT, &h);
+
+    glm::mat4 projection = glm::perspective(glm::radians(45.0f), static_cast<float>(SCR_WIDTH)/static_cast<float>(SCR_HEIGHT), 0.1f,100.0f);
+    glUniformMatrix4fv(glGetUniformLocation(shader.ID, "projection"), 1, GL_FALSE, glm::value_ptr(projection));*/
+    float xpos = 0.0f;
+    float ypos = 0.0f;
+    int w = 0.5f;
+    int h = 0.5f;
 
     // render loop
     // -----------
@@ -263,35 +255,24 @@ int main()
         // ------
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
+	
+        float vertices[6][6] = {
+            { xpos,     ypos + h,   1.0f, 1.0f, 0.0f, 0.0f},            
+            { xpos,     ypos,       1.0f, 1.0f, 0.0f, 1.0f},
+            { xpos + w, ypos,       1.0f, 1.0f, 1.0f, 1.0f},
 
-   //		shader2.use();
-   //   	glBindVertexArray(VAO2);
-   //  	glBindBuffer(GL_ARRAY_BUFFER, VBO2);
-   //     glDrawArrays(GL_TRIANGLES, 0, 3);
-    //	glBindVertexArray(0);
-	//
-	/*
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, NULL, GL_DYNAMIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
-	*/
-		/*
-		for(float i=-400.0f; i<400.0f;i=i+50.0f){
-		for(float j=-400.0f; j<400.0f;j=j+50.0f){
-		for(float k=-400.0f; k<400.0f;k=k+50.0f){
-			printf("%f%f%f",i,j,k);
-        	RenderText(shader, "This is sample text", 20.0f+i, 20.0f+j, 50.0f+k, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
-		}}}*//*
-		for(float i=-1.0f; i<1.0f;i=i+0.3f){
-		for(float j=-1.0f; j<1.0f;j=j+0.3f){
-		for(float k=-1.0f; k<1.0f;k=k+0.3f){
-		printf("%f %f %f",i,j,k);
-        RenderText(shader, "This is sample text", i, j, k, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
-		}}}*/
-        RenderText(shader, "This is sample text", 0.5f, 0.5f, 0.5f, 1.0f, glm::vec3(0.5, 0.8f, 0.2f));
-        //RenderText(shader, "(C) LearnOpenGL.com", 540.0f, 570.0f, 0.5f, glm::vec3(0.3, 0.7f, 0.9f));
+            { xpos,     ypos + h,   1.0f, 1.0f, 0.0f, 0.0f},
+            { xpos + w, ypos,       1.0f, 1.0f, 1.0f, 1.0f},
+            { xpos + w, ypos + h,   1.0f, 1.0f, 1.0f, 0.0f}           
+        };
+        // render glyph texture over quad
+    	glBindTexture(GL_TEXTURE_2D, textTextureMap);
+        // update content of VBO memory
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices); // be sure to use glBufferSubData and not glBufferData
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        // render quad
+        glDrawArrays(GL_TRIANGLES, 0, 6);
        
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
@@ -323,19 +304,25 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 
 // render line of text
 // -------------------
-void RenderText(Shader &shader, std::string text, float x, float y, float z, float scale, glm::vec3 color)
+int getTextTexture(Shader &shader, std::string text, float scale, glm::vec3 color)
 {
     // activate corresponding render state	
     shader.use();
     glUniform3f(glGetUniformLocation(shader.ID, "textColor"), color.x, color.y, color.z);
+    glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(SCR_WIDTH), 0.0f, static_cast<float>(SCR_HEIGHT));
+    glUniformMatrix4fv(glGetUniformLocation(shader.ID, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+
     glActiveTexture(GL_TEXTURE0);
     glBindVertexArray(VAO);
 
-    // iterate through all characters just to get 
+    // iterate through all characters just to get length
     std::string::const_iterator c;
-	float xlength = 0.0f;
+    float xlength = 0.0f;
     float xpos;
-	float beginpos = x;
+    float x = 0.0f;
+    float beginpos = 0.0f;
+    float y = 0.0f;
+    float maxsize = 0.0f;
     for (c = text.begin(); c != text.end(); c++) 
     {
         Character ch = Characters[*c];
@@ -346,18 +333,21 @@ void RenderText(Shader &shader, std::string text, float x, float y, float z, flo
         float w = ch.Size.x * scale;
         float h = ch.Size.y * scale;
 
-		//hopefully this works
+	if (maxsize < h)
+		maxsize = h;
+	//hopefully this works
         x += (ch.Advance >> 6) * scale; // bitshift by 6 to get value in pixels (2^6 = 64 (divide amount of 1/64th pixels by 64 to get amount of pixels))
 	}
 
-	float xlength = xpos - beginpos;
+	xlength = xpos - beginpos;
 	x = beginpos;
 
 	// generate texture
 	unsigned int textureColorbuffer;
+	unsigned int textureFramebuffer;
 	glGenTextures(1, &textureColorbuffer);
 	glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, xlength, h, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, xlength, maxsize, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -366,9 +356,11 @@ void RenderText(Shader &shader, std::string text, float x, float y, float z, flo
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorbuffer, 0);
 
 	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-			std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
-	glBindFramebuffer(GL_FRAMEBUFFER, textureColorbuffer);
+		std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+	glBindFramebuffer(GL_FRAMEBUFFER, textureFramebuffer);
 
+    	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    	glClear(GL_COLOR_BUFFER_BIT);
     for (c = text.begin(); c != text.end(); c++) 
     {
         Character ch = Characters[*c];
@@ -379,18 +371,18 @@ void RenderText(Shader &shader, std::string text, float x, float y, float z, flo
         float w = ch.Size.x * scale;
         float h = ch.Size.y * scale;
 
-		if (maxsize < h)
-				maxsize = h;
+	if (maxsize < h)
+		maxsize = h;
 
         // update VBO for each character
         float vertices[6][6] = {
-            { xpos,     ypos + h,   0.0f, 0.0f, z, 0.0f},            
-            { xpos,     ypos,       0.0f, 1.0f, z, 0.0f},
-            { xpos + w, ypos,       1.0f, 1.0f, z, 0.0f},
+            { xpos,     ypos + h,   0.0f, 0.0f, 1.0f, 0.0f},            
+            { xpos,     ypos,       0.0f, 1.0f, 1.0f, 0.0f},
+            { xpos + w, ypos,       1.0f, 1.0f, 1.0f, 0.0f},
 
-            { xpos,     ypos + h,   0.0f, 0.0f, z, 0.0f},
-            { xpos + w, ypos,       1.0f, 1.0f, z, 0.0f},
-            { xpos + w, ypos + h,   1.0f, 0.0f, z, 0.0f}           
+            { xpos,     ypos + h,   0.0f, 0.0f, 1.0f, 0.0f},
+            { xpos + w, ypos,       1.0f, 1.0f, 1.0f, 0.0f},
+            { xpos + w, ypos + h,   1.0f, 0.0f, 1.0f, 0.0f}           
         };
         // render glyph texture over quad
         glBindTexture(GL_TEXTURE_2D, ch.TextureID);
@@ -403,11 +395,11 @@ void RenderText(Shader &shader, std::string text, float x, float y, float z, flo
         glDrawArrays(GL_TRIANGLES, 0, 6);
         // now advance cursors for next glyph (note that advance is number of 1/64 pixels)
         x += (ch.Advance >> 6) * scale; // bitshift by 6 to get value in pixels (2^6 = 64 (divide amount of 1/64th pixels by 64 to get amount of pixels))
-		printf("\t %f \t",x);
+	printf("\t %f \t",x);
     }
-
-
 
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    return textureColorbuffer;
 }
